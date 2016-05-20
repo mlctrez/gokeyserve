@@ -1,12 +1,12 @@
 package main
 
 import (
+	"crypto/x509"
+	"encoding/pem"
+	"flag"
+	"fmt"
 	"github.com/mlctrez/gokeyserve"
 	"log"
-	"encoding/pem"
-	"crypto/x509"
-	"fmt"
-	"flag"
 )
 
 func main() {

@@ -1,14 +1,13 @@
 package main
 
 import (
-	"github.com/mlctrez/gokeyserve/server"
-	"net/rpc"
-	"net"
 	"flag"
+	"github.com/mlctrez/gokeyserve/server"
 	"log"
+	"net"
+	"net/rpc"
 	"time"
 )
-
 
 // example of using gokeyserve/server
 

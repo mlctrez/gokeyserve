@@ -1,26 +1,30 @@
 package server
 
 import (
-	"crypto/rsa"
 	"crypto/rand"
-	"time"
-	"log"
+	"crypto/rsa"
 	"errors"
+	"log"
+	"time"
 )
 
 var keychan chan *rsa.PrivateKey
 var rotationInterval time.Duration
 var generatorCount int
 
+// Request is the first RPC argument. It contains no data.
 type Request struct {
 }
 
+// Response is the return from the RPC call containing the private key.
 type Response struct {
 	Key *rsa.PrivateKey
 }
 
+// GoKeyServer is the rpc type.
 type GoKeyServer int
 
+// Generate is the RPC method to generate a private key.
 func (t *GoKeyServer) Generate(req *Request, res *Response) error {
 	res.Key = GetGeneratedKey()
 	return nil
@@ -31,6 +35,7 @@ func GenerateKey(bits int) (privatekey *rsa.PrivateKey) {
 	privatekey, _ = rsa.GenerateKey(rand.Reader, bits)
 	return privatekey
 }
+
 // GetGeneratedKey retrieves a pre generated key from the channel.
 func GetGeneratedKey() *rsa.PrivateKey {
 	return <-keychan
@@ -46,14 +51,14 @@ func Start(rotateEvery time.Duration, generators int) error {
 
 	rotationInterval = rotateEvery
 	generatorCount = generators
-	keychan = make(chan *rsa.PrivateKey, generatorCount - 1)
+	keychan = make(chan *rsa.PrivateKey, generatorCount-1)
 
 	log.Printf("generators: %v", generatorCount)
 	for i := 0; i < generatorCount; i++ {
 		go generate()
 	}
 
-	if rotationInterval > 0 * time.Second {
+	if rotationInterval > 0*time.Second {
 		log.Printf("rotating every: %v", rotationInterval)
 		go rotate()
 	}
@@ -79,4 +84,3 @@ func rotate() {
 		}
 	}
 }
-
