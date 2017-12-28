@@ -4,30 +4,14 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"errors"
-	"log"
 	"time"
 )
 
-var keychan chan *rsa.PrivateKey
-var rotationInterval time.Duration
-var generatorCount int
-
-// Request is the first RPC argument. It contains no data.
-type Request struct {
-}
-
-// Response is the return from the RPC call containing the private key.
-type Response struct {
-	Key *rsa.PrivateKey
-}
-
-// GoKeyServer is the rpc type.
-type GoKeyServer int
-
-// Generate is the RPC method to generate a private key.
-func (t *GoKeyServer) Generate(req *Request, res *Response) error {
-	res.Key = GetGeneratedKey()
-	return nil
+// GoKeyServer is the server struct
+type GoKeyServer struct {
+	keyChan          chan *rsa.PrivateKey
+	rotationInterval time.Duration
+	generatorCount   int
 }
 
 // GenerateKey creates a rsa.PrivateKey of bits length or returns nil on error.
@@ -37,50 +21,47 @@ func GenerateKey(bits int) (privatekey *rsa.PrivateKey) {
 }
 
 // GetGeneratedKey retrieves a pre generated key from the channel.
-func GetGeneratedKey() *rsa.PrivateKey {
-	return <-keychan
+func (s *GoKeyServer) GetGeneratedKey() *rsa.PrivateKey {
+	return <-s.keyChan
 }
 
 // Start is used to initialize the channel generator and key rotation
 // seconds determines how often in memory keys are rotated or zero for no rotation.
-func Start(rotateEvery time.Duration, generators int) error {
+func New(rotationInterval time.Duration, generatorCount int) (s *GoKeyServer, err error) {
 
-	if generators < 1 {
-		return errors.New("generators must be 1 or greater")
+	if generatorCount < 1 {
+		return nil, errors.New("generatorCount must be 1 or greater")
 	}
 
-	rotationInterval = rotateEvery
-	generatorCount = generators
-	keychan = make(chan *rsa.PrivateKey, generatorCount-1)
+	s = &GoKeyServer{
+		rotationInterval: rotationInterval,
+		generatorCount:   generatorCount,
+		keyChan:          make(chan *rsa.PrivateKey, generatorCount-1),
+	}
 
-	log.Printf("generators: %v", generatorCount)
 	for i := 0; i < generatorCount; i++ {
-		go generate()
+		go s.generate()
 	}
 
 	if rotationInterval > 0*time.Second {
-		log.Printf("rotating every: %v", rotationInterval)
-		go rotate()
+		go s.rotate()
 	}
 
-	return nil
+	return s, nil
 }
 
-func generate() {
-	log.Println("new generator")
+func (s *GoKeyServer) generate() {
 	for {
-		log.Println("generating key")
-		keychan <- GenerateKey(2048)
+		s.keyChan <- GenerateKey(2048)
 	}
 }
 
 // ensures that the any keys held in memory are rotated every rotationSeconds
-func rotate() {
+func (s *GoKeyServer) rotate() {
 	for {
-		time.Sleep(rotationInterval)
-		for i := 0; i < generatorCount; i++ {
-			log.Println("rotating key")
-			GetGeneratedKey()
+		time.Sleep(s.rotationInterval)
+		for i := 0; i < s.generatorCount; i++ {
+			_ = s.GetGeneratedKey()
 		}
 	}
 }
