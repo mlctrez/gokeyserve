@@ -25,7 +25,7 @@ func (s *GoKeyServer) GetGeneratedKey() *rsa.PrivateKey {
 	return <-s.keyChan
 }
 
-// Start is used to initialize the channel generator and key rotation
+// New is used to initialize the channel generator and key rotation
 // seconds determines how often in memory keys are rotated or zero for no rotation.
 func New(rotationInterval time.Duration, generatorCount int) (s *GoKeyServer, err error) {
 
