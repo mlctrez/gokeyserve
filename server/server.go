@@ -36,14 +36,14 @@ func New(rotationInterval time.Duration, generatorCount int) (s *GoKeyServer, er
 	s = &GoKeyServer{
 		rotationInterval: rotationInterval,
 		generatorCount:   generatorCount,
-		keyChan:          make(chan *rsa.PrivateKey, generatorCount-1),
+		keyChan:          make(chan *rsa.PrivateKey, generatorCount),
 	}
 
 	for i := 0; i < generatorCount; i++ {
 		go s.generate()
 	}
 
-	if rotationInterval > 0*time.Second {
+	if rotationInterval > 0 {
 		go s.rotate()
 	}
 
